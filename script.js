@@ -1,63 +1,59 @@
-const btn = document.querySelector(".secondary"); 
+/* ================= SELECTORS ================= */
+
+const btn = document.querySelector(".secondary");
 const wrapper = document.querySelector(".fizzy-wrapper");
-const slider = document.querySelector('.slider');
-const next = document.getElementById('next');
-const prev = document.getElementById('prev');
-const navbar = document.querySelector(".nav-bar")
-const track = document.querySelector(".carousel-track")
 
-const reveals = document.querySelectorAll(".reveal")
+const slider = document.querySelector(".slider");
+const next = document.getElementById("next");
+const prev = document.getElementById("prev");
 
-AOS.init();
+const navbar = document.querySelector(".nav-bar");
+const track = document.querySelector(".carousel-track");
+const marquee = document.getElementById("myMarquee");
 
+/* ================= AOS SAFE INIT ================= */
 
-// Toggle navigation menu on smaller screens
-function toggleNav() {
-    const nav = document.querySelector('.nav-elem');
-    nav.classList.toggle('active');
+if (window.AOS) {
+  AOS.init();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const counters = document.querySelectorAll(".counter")
-  const stats = document.querySelectorAll(".num")
+/* ================= NAV TOGGLE ================= */
 
+function toggleNav() {
+  const nav = document.querySelector(".nav-elem");
+  nav && nav.classList.toggle("active");
+}
+
+/* ================= COUNTER ================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const stats = document.querySelectorAll(".num");
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
-  function formatNumber(num) {
-    return num.toLocaleString();
-  }
+  function animateCounter(counter, delay = 0) {
+    if (!counter) return;
 
-  function animateCounter(counter, delay = 0){
-    const target = Number(counter.dataset.target)
-    const h1 = counter.parentElement;
-
-    let start = 0;
-    const duration = 1600
+    const target = Number(counter.dataset.target);
+    const parent = counter.parentElement;
+    const duration = 1600;
     const startTime = performance.now() + delay;
 
     function update(now) {
-      if (now < startTime) {
-        requestAnimationFrame(update);
-        return;
-      }
+      if (now < startTime) return requestAnimationFrame(update);
 
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // easeOutCubic
+      const progress = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      const value = Math.floor(eased * target);
+      counter.textContent = Math.floor(eased * target);
 
-      counter.textContent = formatNumber(value);
-      h1.classList.add("glow");
+      parent?.classList.add("glow");
 
       if (progress < 1) {
         requestAnimationFrame(update);
       } else {
-        counter.textContent = formatNumber(target);
-        h1.classList.remove("glow");
+        counter.textContent = target;
+        parent?.classList.remove("glow");
       }
     }
 
@@ -66,19 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const observer = new IntersectionObserver(
     (entries, obs) => {
-      entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("sho");
+      entries.forEach((entry, i) => {
+        if (!entry.isIntersecting) return;
 
-          const counter = entry.target.querySelector(".counter");
-          if (!prefersReducedMotion) {
-            animateCounter(counter, index * 250); // stagger
-          } else {
-            counter.textContent = counter.dataset.target;
-          }
+        entry.target.classList.add("sho");
+        const counter = entry.target.querySelector(".counter");
 
-          obs.unobserve(entry.target);
-        }
+        prefersReducedMotion
+          ? (counter.textContent = counter.dataset.target)
+          : animateCounter(counter, i * 250);
+
+        obs.unobserve(entry.target);
       });
     },
     { threshold: 0.6 }
@@ -87,80 +81,234 @@ document.addEventListener("DOMContentLoaded", () => {
   stats.forEach(stat => observer.observe(stat));
 });
 
+/* ================= CAROUSEL CLONE ================= */
 
-const itemss = track.innerHTML;
-
-track.innerHTML += itemss
-
-
-btn.addEventListener('mouseenter', () => { 
-  for (let i = 0; i < 40; i++) {
-    createBubble();
-  }
-});
-
-
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    navbar.classList.add("show")
-  }, 500)
-}) 
-
-
-function moveNext() {
-  slider.appendChild(slider.firstElementChild);
+if (track && !track.dataset.cloned) {
+  track.innerHTML += track.innerHTML;
+  track.dataset.cloned = "true";
 }
 
-function movePrev() {
-  slider.prepend(slider.lastElementChild);
-}
+/* ================= BUBBLE EFFECT ================= */
 
-next.addEventListener('click', moveNext);
-prev.addEventListener('click', movePrev);
+let bubbleLock = false;
 
-setInterval(() => {
-  moveNext();
-}, 4000);
+btn?.addEventListener("mouseenter", () => {
+  if (bubbleLock || !wrapper) return;
+  bubbleLock = true;
 
-var marquee = document.getElementById("myMarquee");
+  for (let i = 0; i < 30; i++) createBubble();
 
-// Stop the marquee on hover
-marquee.addEventListener("mouseover", function () {
-  marquee.stop();
-  marquee.style.cursor = 'pointer';
+  setTimeout(() => (bubbleLock = false), 800);
 });
-
-// Start the marquee again when the mouse leaves
-marquee.addEventListener("mouseout", function () {
-  marquee.start();
-});
-
-
-
 
 function createBubble() {
   const bubble = document.createElement("span");
-  bubble.classList.add('bubble');
+  bubble.classList.add("bubble");
 
-  const size = Math.random() * 12 + 6; 
-  bubble.style.width = size + "px";
-  bubble.style.height = size + "px";
+  const size = Math.random() * 12 + 6;
+  bubble.style.width = bubble.style.height = `${size}px`;
+  bubble.style.left = 50 + (Math.random() * 120 - 60) + "px";
+  bubble.style.bottom = "10px";
 
-  const xPos = Math.random() * 120 - 60; 
-  bubble.style.left = 50 + xPos + "px"; 
-  bubble.style.bottom = "10px"; 
-
-  const moveX = Math.random() * 120 - 50 + "px"; 
-  const moveY = -(Math.random() * 150 + 80) + "px"; 
-  bubble.style.setProperty("--x", moveX);
-  bubble.style.setProperty("--y", moveY);
+  bubble.style.setProperty("--x", Math.random() * 120 - 50 + "px");
+  bubble.style.setProperty("--y", -(Math.random() * 150 + 80) + "px");
 
   wrapper.appendChild(bubble);
-
-  setTimeout(() => {
-    bubble.remove(); 
-  }, 2000);
+  setTimeout(() => bubble.remove(), 2000);
 }
+
+/* ================= NAVBAR ================= */
+
+window.addEventListener("load", () => {
+  setTimeout(() => navbar?.classList.add("show"), 500);
+});
+
+/* ================= SLIDER ================= */
+
+function moveNext() {
+  slider?.appendChild(slider.firstElementChild);
+}
+
+function movePrev() {
+  slider?.prepend(slider.lastElementChild);
+}
+
+next?.addEventListener("click", moveNext);
+prev?.addEventListener("click", movePrev);
+setInterval(moveNext, 4000);
+
+/* ================= MARQUEE ================= */
+
+if (marquee?.start && marquee?.stop) {
+  marquee.addEventListener("mouseover", () => marquee.stop());
+  marquee.addEventListener("mouseout", () => marquee.start());
+}
+
+
+
+// const btn = document.querySelector(".secondary"); 
+// const wrapper = document.querySelector(".fizzy-wrapper");
+// const slider = document.querySelector('.slider');
+// const next = document.getElementById('next');
+// const prev = document.getElementById('prev');
+// const navbar = document.querySelector(".nav-bar")
+// const track = document.querySelector(".carousel-track")
+
+// const reveals = document.querySelectorAll(".reveal")
+
+// AOS.init();
+
+
+// // Toggle navigation menu on smaller screens
+// function toggleNav() {
+//     const nav = document.querySelector('.nav-elem');
+//     nav.classList.toggle('active');
+// }
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   const counters = document.querySelectorAll(".counter")
+//   const stats = document.querySelectorAll(".num")
+
+//   const prefersReducedMotion = window.matchMedia(
+//     "(prefers-reduced-motion: reduce)"
+//   ).matches;
+
+//   function formatNumber(num) {
+//     return num.toLocaleString();
+//   }
+
+//   function animateCounter(counter, delay = 0){
+//     const target = Number(counter.dataset.target)
+//     const h1 = counter.parentElement;
+
+//     let start = 0;
+//     const duration = 1600
+//     const startTime = performance.now() + delay;
+
+//     function update(now) {
+//       if (now < startTime) {
+//         requestAnimationFrame(update);
+//         return;
+//       }
+
+//       const elapsed = now - startTime;
+//       const progress = Math.min(elapsed / duration, 1);
+
+//       // easeOutCubic
+//       const eased = 1 - Math.pow(1 - progress, 3);
+//       const value = Math.floor(eased * target);
+
+//       counter.textContent = formatNumber(value);
+//       h1.classList.add("glow");
+
+//       if (progress < 1) {
+//         requestAnimationFrame(update);
+//       } else {
+//         counter.textContent = formatNumber(target);
+//         h1.classList.remove("glow");
+//       }
+//     }
+
+//     requestAnimationFrame(update);
+//   }
+
+//   const observer = new IntersectionObserver(
+//     (entries, obs) => {
+//       entries.forEach((entry, index) => {
+//         if (entry.isIntersecting) {
+//           entry.target.classList.add("sho");
+
+//           const counter = entry.target.querySelector(".counter");
+//           if (!prefersReducedMotion) {
+//             animateCounter(counter, index * 250); // stagger
+//           } else {
+//             counter.textContent = counter.dataset.target;
+//           }
+
+//           obs.unobserve(entry.target);
+//         }
+//       });
+//     },
+//     { threshold: 0.6 }
+//   );
+
+//   stats.forEach(stat => observer.observe(stat));
+// });
+
+
+// const itemss = track.innerHTML;
+
+// track.innerHTML += itemss
+
+
+// btn.addEventListener('mouseenter', () => { 
+//   for (let i = 0; i < 40; i++) {
+//     createBubble();
+//   }
+// });
+
+
+// window.addEventListener("load", () => {
+//   setTimeout(() => {
+//     navbar.classList.add("show")
+//   }, 500)
+// }) 
+
+
+// function moveNext() {
+//   slider.appendChild(slider.firstElementChild);
+// }
+
+// function movePrev() {
+//   slider.prepend(slider.lastElementChild);
+// }
+
+// next.addEventListener('click', moveNext);
+// prev.addEventListener('click', movePrev);
+
+// setInterval(() => {
+//   moveNext();
+// }, 4000);
+
+// var marquee = document.getElementById("myMarquee");
+
+// // Stop the marquee on hover
+// marquee.addEventListener("mouseover", function () {
+//   marquee.stop();
+//   marquee.style.cursor = 'pointer';
+// });
+
+// // Start the marquee again when the mouse leaves
+// marquee.addEventListener("mouseout", function () {
+//   marquee.start();
+// });
+
+
+
+
+// function createBubble() {
+//   const bubble = document.createElement("span");
+//   bubble.classList.add('bubble');
+
+//   const size = Math.random() * 12 + 6; 
+//   bubble.style.width = size + "px";
+//   bubble.style.height = size + "px";
+
+//   const xPos = Math.random() * 120 - 60; 
+//   bubble.style.left = 50 + xPos + "px"; 
+//   bubble.style.bottom = "10px"; 
+
+//   const moveX = Math.random() * 120 - 50 + "px"; 
+//   const moveY = -(Math.random() * 150 + 80) + "px"; 
+//   bubble.style.setProperty("--x", moveX);
+//   bubble.style.setProperty("--y", moveY);
+
+//   wrapper.appendChild(bubble);
+
+//   setTimeout(() => {
+//     bubble.remove(); 
+//   }, 2000);
+// }
 
 
 
@@ -435,4 +583,5 @@ function createBubble() {
 
 
   
+
 
